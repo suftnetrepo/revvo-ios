@@ -1,0 +1,363 @@
+import SwiftUI
+import SwiftData
+import VisionKit
+
+struct ScanView: View {
+    @Environment(\.modelContext) private var modelContext
+    @State private var showScanner = false
+    @State private var isGenerating = false
+    @State private var generatedCards: [FlashcardResponse] = []
+    @State private var scannedImages: [UIImage] = []
+    @State private var showPreview = false
+    @State private var errorMessage: String?
+    @State private var showError = false
+    @State private var showNameDeck = false
+    @State private var deckName = ""
+    @State private var documentSummary = ""
+    @State private var documentTitle = ""
+    @State private var showSummary = false
+    private var purchaseService: PurchaseService { PurchaseService.shared }
+    var onDismiss: () -> Void = {}
+    var onPaywall: () -> Void = {}
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "0A0A0F").ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                headerView
+                if isGenerating {
+                    generatingView
+                } else if showPreview {
+                    previewView
+                } else {
+                    emptyStateView
+                }
+            }
+           
+        }
+        .sheet(isPresented: $showSummary) {
+            SummaryView(
+                title: documentTitle,
+                summary: documentSummary,
+                onDismiss: { showSummary = false }
+            )
+        }
+        .fullScreenCover(isPresented: $showScanner, onDismiss: {
+            print("🎬 Scanner dismissed, images: \(scannedImages.count)")
+            if !scannedImages.isEmpty {
+                purchaseService.recordScan()
+                Task {
+                    await MainActor.run {
+                        isGenerating = true
+                        print("⚙️ isGenerating set to true")
+                    }
+                    await generateCards()
+                }
+            }
+        }) {
+            DocumentScannerView { result in
+                switch result {
+                case .success(let scan):
+                    scannedImages = []
+                    let count = min(scan.pageCount, 8)
+                    for i in 0..<count {
+                        scannedImages.append(scan.imageOfPage(at: i))
+                    }
+                    print("📸 Stored \(scannedImages.count) images")
+                case .failure(let error):
+                    print("❌ \(error)")
+                }
+                showScanner = false
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "Something went wrong")
+        }
+        .onChange(of: isGenerating) { _, val in print("👁️ isGenerating: \(val)") }
+        .onChange(of: showPreview) { _, val in print("👁️ showPreview: \(val)") }
+        .sheet(isPresented: $showNameDeck) {
+            NameDeckSheet(
+                cards: generatedCards,
+                onSave: { name in
+                    saveDeckWithName(name)
+                },
+                onDismiss: { showNameDeck = false }
+            )
+        }.sheet(isPresented: $showSummary) {
+            SummaryView(
+                title: documentTitle,
+                summary: documentSummary,
+                onDismiss: { showSummary = false }
+            )
+        }
+    }
+
+    private func generateCards() async {
+        print("🚀 generateCards called, images: \(scannedImages.count)")
+        do {
+            let result = try await OpenAIService.shared.generateScanResult(from: scannedImages)
+            print("✅ Got \(result.flashcards.count) cards")
+            await MainActor.run {
+                generatedCards = result.flashcards
+                documentSummary = result.summary
+                documentTitle = result.title
+                isGenerating = false
+                showPreview = true
+            }
+        } catch {
+            print("❌ \(error)")
+            await MainActor.run {
+                errorMessage = "Failed to generate cards. Please try again."
+                showError = true
+                isGenerating = false
+            }
+        }
+    }
+
+    private var headerView: some View {
+        HStack {
+            Button(action: { onDismiss() }) {
+                Image(systemName: "xmark")
+                    .foregroundStyle(Color(hex: "888888"))
+                    .frame(width: 32, height: 32)
+                    .background(Color(hex: "1a1a2e"))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            Spacer()
+            Text("Scan notes")
+                .foregroundStyle(.white)
+                .font(.system(size: 16, weight: .medium))
+            Spacer()
+            Text("AI")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color(hex: "6C5CE7"))
+                .clipShape(Capsule())
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "doc.viewfinder")
+                .font(.system(size: 64))
+                .foregroundStyle(Color(hex: "6C5CE7"))
+            VStack(spacing: 8) {
+                Text("Scan your notes")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(.white)
+                Text("Point your camera at handwritten or\nprinted notes to generate flashcards")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(hex: "666666"))
+                    .multilineTextAlignment(.center)
+            }
+            VStack(spacing: 12) {
+                featurePill(icon: "doc.on.doc", text: "Up to 8 pages per scan")
+                featurePill(icon: "hand.draw", text: "Handwriting supported")
+                featurePill(icon: "sparkles", text: "AI generates up to 20 cards")
+            }
+            Spacer()
+            if !purchaseService.isPremium {
+                HStack(spacing: 6) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 11))
+                    Text("\(purchaseService.scansRemaining) free scans remaining")
+                        .font(.system(size: 13))
+                }
+                .foregroundStyle(Color(hex: purchaseService.scansRemaining <= 2 ? "F59E0B" : "666666"))
+                .padding(.bottom, 4)
+            }
+            Button(action: { if purchaseService.canScan {
+                showScanner = true
+            } else {
+                onPaywall()
+            }}) {
+                HStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                    Text("Start scanning")
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color(hex: "6C5CE7"))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 32)
+        }
+    }
+
+    private var generatingView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            ProgressView()
+                .tint(Color(hex: "6C5CE7"))
+                .scaleEffect(1.5)
+            VStack(spacing: 8) {
+                Text("Generating flashcards...")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.white)
+                Text("Analysing \(scannedImages.count) page\(scannedImages.count == 1 ? "" : "s")")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(hex: "666666"))
+            }
+            Spacer()
+        }
+    }
+
+    private var previewView: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(documentTitle.isEmpty ? "\(generatedCards.count) cards generated" : documentTitle)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.white)
+                    Text("From \(scannedImages.count) page\(scannedImages.count == 1 ? "" : "s")")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "666666"))
+                }
+                Spacer()
+                if !documentSummary.isEmpty {
+                    Button(action: { showSummary = true }) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color(hex: "6C5CE7"))
+                            .frame(width: 32, height: 32)
+                            .background(Color(hex: "13132a"))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                Button("Rescan") {
+                    generatedCards = []
+                    scannedImages = []
+                    showPreview = false
+                    documentSummary = ""
+                    documentTitle = ""
+                    showScanner = true
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(Color(hex: "6C5CE7"))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach(generatedCards.indices, id: \.self) { index in
+                        cardPreviewRow(card: generatedCards[index], index: index)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 100)
+            }
+
+            VStack(spacing: 10) {
+                Button(action: { saveCards() }) {
+                    Text("Save \(generatedCards.count) cards to deck")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(hex: "6C5CE7"))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                Button("Discard") {
+                    generatedCards = []
+                    scannedImages = []
+                    showPreview = false
+                }
+                .font(.system(size: 14))
+                .foregroundStyle(Color(hex: "666666"))
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 32)
+            .background(Color(hex: "0A0A0F"))
+        }
+    }
+
+    private func cardPreviewRow(card: FlashcardResponse, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(card.topicTag)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color(hex: "9d8ef5"))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color(hex: "2d1f6e"))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                Spacer()
+                Text("#\(index + 1)")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color(hex: "444444"))
+            }
+            MathTextView(card.question,
+                fontSize: 13,
+                color: .white)
+            MathTextView(card.answer,
+                fontSize: 12,
+                color: Color(hex: "888888"))
+        }
+        .padding(12)
+        .background(Color(hex: "13132a"))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
+        )
+    }
+
+    private func featurePill(icon: String, text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(Color(hex: "6C5CE7"))
+            Text(text)
+                .font(.system(size: 13))
+                .foregroundStyle(Color(hex: "888888"))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color(hex: "13132a"))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
+        )
+    }
+
+    private func saveCards() {
+        showNameDeck = true
+    }
+    
+    private func saveDeckWithName(_ name: String) {
+        let deck = Deck(
+            name: name,
+            colorHex: "6C5CE7",
+            iconName: "book.fill"
+        )
+        deck.summary = documentSummary
+        deck.documentTitle = documentTitle
+        for card in generatedCards {
+            let flashcard = Flashcard(
+                question: card.question,
+                answer: card.answer,
+                topicTag: card.topicTag
+            )
+            flashcard.deck = deck
+            deck.flashcards.append(flashcard)
+        }
+        modelContext.insert(deck)
+        try? modelContext.save()
+        showNameDeck = false
+        onDismiss()
+    }
+}

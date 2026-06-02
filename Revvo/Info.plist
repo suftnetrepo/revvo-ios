@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>OPENAI_API_KEY</key>
+	<string>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</string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>appl_XFrjSZnJQHEErLQgJFWwTdgEQlQ</string>
+</dict>
+</plist>
