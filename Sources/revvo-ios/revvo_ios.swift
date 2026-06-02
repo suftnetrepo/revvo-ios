@@ -28,12 +28,12 @@ public struct LocalAIFlashcardGenerator: AIFlashcardGenerating {
             throw FlashcardGenerationError.invalidTopic
         }
 
-        let cards = (1...max(1, cardCount)).map { index in
+        let cards = cardCount > 0 ? (1...cardCount).map { index in
             [
                 "question": "What is a key concept #\(index) for \(normalizedTopic)?",
                 "answer": "A core idea for \(normalizedTopic) is understanding concept #\(index)."
             ]
-        }
+        } : []
 
         let data = try JSONSerialization.data(withJSONObject: cards, options: [.prettyPrinted])
         return String(decoding: data, as: UTF8.self)
