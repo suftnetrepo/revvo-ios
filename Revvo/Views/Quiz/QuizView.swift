@@ -355,6 +355,12 @@ struct QuizView: View {
 
     private func nextQuestion() {
         withAnimation(.easeInOut(duration: 0.2)) {
+            if let selected = selectedAnswer, let question = currentQuestion {
+                if selected == question.correctIndex {
+                    question.card.reviewCount += 1
+                    question.card.intervalDays = min(question.card.intervalDays * 2, 30)
+                }
+            }
             if currentIndex == questions.count - 1 {
                 showResult = true
             } else {

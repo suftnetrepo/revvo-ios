@@ -18,7 +18,7 @@ class PurchaseService {
         return "scans_\(year)_\(month)"
     }
 
-    var canScan: Bool { isPremium || scansThisMonth < 1 }
+    var canScan: Bool { isPremium || scansThisMonth < 10 }
     var scansRemaining: Int { isPremium ? 999 : max(0, 1 - scansThisMonth) }
 
     init() {
@@ -79,12 +79,45 @@ class PurchaseService {
     func recordScan() {
         scansThisMonth += 1
         UserDefaults.standard.set(scansThisMonth, forKey: scansKey)
-        print("📊 Scans this month: \(scansThisMonth), canScan: \(canScan)")
+     
     }
 
     func resetScans() {
         scansThisMonth = 0
         UserDefaults.standard.set(0, forKey: scansKey)
-        print("🔄 Scans reset")
+       
+    }
+    var studyStreak: Int {
+        get { UserDefaults.standard.integer(forKey: "studyStreak") }
+    }
+
+    var lastStudyDate: Date? {
+        get { UserDefaults.standard.object(forKey: "lastStudyDate") as? Date }
+    }
+
+    func recordStudySession() {
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        if let last = lastStudyDate {
+            let lastDay = Calendar.current.startOfDay(for: last)
+            let daysDiff = Calendar.current.dateComponents([.day], from: lastDay, to: today).day ?? 0
+            
+            if daysDiff == 0 {
+                // Already studied today — no change
+                return
+            } else if daysDiff == 1 {
+                // Studied yesterday — increment streak
+                UserDefaults.standard.set(studyStreak + 1, forKey: "studyStreak")
+            } else {
+                // Missed a day — reset streak to 1
+                UserDefaults.standard.set(1, forKey: "studyStreak")
+            }
+        } else {
+            // First time studying
+            UserDefaults.standard.set(1, forKey: "studyStreak")
+        }
+        
+        UserDefaults.standard.set(Date(), forKey: "lastStudyDate")
+     
     }
 }

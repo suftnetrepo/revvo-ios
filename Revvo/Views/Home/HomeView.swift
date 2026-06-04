@@ -4,7 +4,6 @@ import SwiftData
 struct HomeView: View {
     @Query private var decks: [Deck]
     @State private var showScan = false
-    @State private var showNewDeck = false
     @State private var showPaywall = false
     @Environment(\.modelContext) private var modelContext
 
@@ -72,9 +71,6 @@ struct HomeView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: showScan)
-            .sheet(isPresented: $showNewDeck) {
-                NewDeckView(onDismiss: { showNewDeck = false })
-            }
         }}
 
     private var headerView: some View {
@@ -97,7 +93,13 @@ struct HomeView: View {
                 
             }
             Spacer()
-            Button(action: { showNewDeck = true }) {
+            Button(action: {
+                if PurchaseService.shared.canScan {
+                    showScan = true
+                } else {
+                    showPaywall = true
+                }
+            }) {
                 Image(systemName: "plus")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.white)
@@ -124,7 +126,11 @@ struct HomeView: View {
                 Text("Study streak")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white)
-                Text("Keep it going!")
+                Text(PurchaseService.shared.studyStreak == 0 ? "Start your streak today!" :
+                     PurchaseService.shared.studyStreak == 1 ? "Great start!" :
+                     PurchaseService.shared.studyStreak < 7 ? "Keep it going!" :
+                     PurchaseService.shared.studyStreak < 30 ? "You're on fire! 🔥" :
+                     "Incredible streak! 🏆")
                     .font(.system(size: 11))
                     .foregroundStyle(Color(hex: "666666"))
             }
@@ -153,6 +159,7 @@ struct HomeView: View {
                     DeckRowView(deck: deck)
                 }
                 .buttonStyle(.plain)
+                .id("\(deck.id)-\(deck.masteredCards)")
                 .contextMenu {
                     Button(role: .destructive) {
                         deleteDeck(deck)
@@ -221,5 +228,7 @@ struct HomeView: View {
         }
     }
 
-    private func calculateStreak() -> Int { return 0 }
+    private func calculateStreak() -> Int {
+        return PurchaseService.shared.studyStreak
+    }
 }

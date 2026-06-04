@@ -164,11 +164,6 @@ struct SummaryView: View {
             dividerPath.stroke()
             yPosition += 20
 
-            // Body paragraphs
-            let bodyAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 12),
-                .foregroundColor: UIColor.darkGray
-            ]
 
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.lineSpacing = 6

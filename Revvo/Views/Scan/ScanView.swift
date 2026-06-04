@@ -44,13 +44,11 @@ struct ScanView: View {
             )
         }
         .fullScreenCover(isPresented: $showScanner, onDismiss: {
-            print("🎬 Scanner dismissed, images: \(scannedImages.count)")
             if !scannedImages.isEmpty {
                 purchaseService.recordScan()
                 Task {
                     await MainActor.run {
                         isGenerating = true
-                        print("⚙️ isGenerating set to true")
                     }
                     await generateCards()
                 }
@@ -64,7 +62,6 @@ struct ScanView: View {
                     for i in 0..<count {
                         scannedImages.append(scan.imageOfPage(at: i))
                     }
-                    print("📸 Stored \(scannedImages.count) images")
                 case .failure(let error):
                     print("❌ \(error)")
                 }
@@ -81,8 +78,9 @@ struct ScanView: View {
         .sheet(isPresented: $showNameDeck) {
             NameDeckSheet(
                 cards: generatedCards,
-                onSave: { name in
-                    saveDeckWithName(name)
+                suggestedName: documentTitle,
+                onSave: { name, color, icon in
+                    saveDeckWithName(name, color: color, icon: icon)
                 },
                 onDismiss: { showNameDeck = false }
             )
@@ -96,10 +94,10 @@ struct ScanView: View {
     }
 
     private func generateCards() async {
-        print("🚀 generateCards called, images: \(scannedImages.count)")
+     
         do {
             let result = try await OpenAIService.shared.generateScanResult(from: scannedImages)
-            print("✅ Got \(result.flashcards.count) cards")
+        
             await MainActor.run {
                 generatedCards = result.flashcards
                 documentSummary = result.summary
@@ -338,11 +336,11 @@ struct ScanView: View {
         showNameDeck = true
     }
     
-    private func saveDeckWithName(_ name: String) {
+    private func saveDeckWithName(_ name: String, color: String = "6C5CE7", icon: String = "book.fill") {
         let deck = Deck(
             name: name,
-            colorHex: "6C5CE7",
-            iconName: "book.fill"
+            colorHex: color,
+            iconName: icon
         )
         deck.summary = documentSummary
         deck.documentTitle = documentTitle

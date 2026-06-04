@@ -242,13 +242,21 @@ struct PaywallView: View {
             .font(.system(size: 13))
             .foregroundStyle(Color(hex: "555555"))
 
-            Button("Privacy Policy") { }
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "555555"))
+            Button("Privacy Policy") {
+                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(Color(hex: "555555"))
 
-            Button("Terms of Use") { }
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "555555"))
+            Button("Terms of Use") {
+                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(Color(hex: "555555"))
         }
     }
 

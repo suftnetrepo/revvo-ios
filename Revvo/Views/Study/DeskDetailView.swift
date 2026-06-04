@@ -3,6 +3,7 @@ import SwiftData
 
 struct DeckDetailView: View {
     let deck: Deck
+    @State private var refresh = false
     @State private var showStudy = false
     @State private var showQuiz = false
     @State private var selectedCard: Flashcard?

@@ -2,7 +2,8 @@ import SwiftUI
 
 struct NameDeckSheet: View {
     let cards: [FlashcardResponse]
-    var onSave: (String) -> Void
+    let suggestedName: String
+    var onSave: (String, String, String) -> Void
     var onDismiss: () -> Void
     @State private var deckName = ""
     @State private var selectedColor = "6C5CE7"
@@ -24,15 +25,20 @@ struct NameDeckSheet: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(.white)
                     Spacer()
-                    Button("Save") { onSave(deckName.isEmpty ? "My Deck" : deckName) }
-                        .foregroundStyle(Color(hex: "6C5CE7"))
-                        .font(.system(size: 16, weight: .medium))
+                    Button("Save") {
+                        onSave(
+                            deckName.isEmpty ? "My Deck" : deckName,
+                            selectedColor,
+                            selectedIcon
+                        )
+                    }
+                    .foregroundStyle(Color(hex: "6C5CE7"))
+                    .font(.system(size: 16, weight: .medium))
                 }
                 .padding(16)
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Preview
                         HStack(spacing: 12) {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color(hex: selectedColor).opacity(0.2))
@@ -60,7 +66,6 @@ struct NameDeckSheet: View {
                                 .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
                         )
 
-                        // Name input
                         TextField("Deck name", text: $deckName)
                             .foregroundStyle(.white)
                             .padding(14)
@@ -71,7 +76,6 @@ struct NameDeckSheet: View {
                                     .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
                             )
 
-                        // Colour picker
                         VStack(alignment: .leading, spacing: 10) {
                             Text("COLOUR")
                                 .font(.system(size: 11, weight: .medium))
@@ -96,7 +100,6 @@ struct NameDeckSheet: View {
                         .background(Color(hex: "13132a"))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                        // Icon picker
                         VStack(alignment: .leading, spacing: 10) {
                             Text("ICON")
                                 .font(.system(size: 11, weight: .medium))
@@ -130,6 +133,9 @@ struct NameDeckSheet: View {
                     .padding(16)
                 }
             }
+        }
+        .onAppear {
+            deckName = suggestedName
         }
     }
 }

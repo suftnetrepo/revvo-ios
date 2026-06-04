@@ -14,7 +14,7 @@ class Deck {
     @Relationship(deleteRule: .cascade) var flashcards: [Flashcard]
 
     var totalCards: Int { flashcards.count }
-    var masteredCards: Int { flashcards.filter { $0.intervalDays >= 7 }.count }
+    var masteredCards: Int { flashcards.filter { $0.reviewCount >= 1 }.count }
     var progressPercent: Double {
         guard totalCards > 0 else { return 0 }
         return Double(masteredCards) / Double(totalCards) * 100

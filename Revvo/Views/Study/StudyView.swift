@@ -31,6 +31,8 @@ struct StudyView: View {
         }
                 .sheet(isPresented: $showTextSize) {
                     TextSizeSheet(onDismiss: { showTextSize = false })
+                }.onAppear {
+                    PurchaseService.shared.recordStudySession()
                 }
             }
 
@@ -108,59 +110,18 @@ struct StudyView: View {
 
     private func flashcardView(card: Flashcard) -> some View {
         ZStack {
-            // Front face
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color(hex: "13132a"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
-                )
-                .overlay(
-                    VStack(spacing: 16) {
-                        TopicTagView(tag: card.topicTag)
-                        MathTextView(card.question,
-                            fontSize: textPreference.size.questionSize,
-                            color: .white,
-                            alignment: .center)
-                        Text("Tap to reveal answer")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "444444"))
-                    }
-                    .padding(28)
-                )
+            frontFace(card: card)
+                .opacity(isFlipped ? 0 : 1)
                 .rotation3DEffect(
                     .degrees(isFlipped ? 180 : 0),
                     axis: (x: 0, y: 1, z: 0),
                     perspective: 0.5
                 )
 
-            // Back face
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color(hex: "13132a"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color(hex: "6C5CE7").opacity(0.4), lineWidth: 0.5)
-                )
-                .overlay(
-                    VStack(spacing: 16) {
-                        TopicTagView(tag: card.topicTag)
-                        VStack(spacing: 12) {
-                            MathTextView(card.question,
-                                fontSize: textPreference.size.optionSize,
-                                color: Color(hex: "666666"),
-                                alignment: .center)
-                            Divider()
-                                .background(Color(hex: "2a2a3a"))
-                            MathTextView(card.answer,
-                                fontSize: textPreference.size.answerSize,
-                                color: .white,
-                                alignment: .center)
-                        }
-                    }
-                    .padding(28)
-                )
+            backFace(card: card)
+                .opacity(isFlipped ? 1 : 0)
                 .rotation3DEffect(
-                    .degrees(isFlipped ? 0 : -180),
+                    .degrees(isFlipped ? 360 : 180),
                     axis: (x: 0, y: 1, z: 0),
                     perspective: 0.5
                 )
@@ -173,6 +134,54 @@ struct StudyView: View {
         }
     }
 
+    private func frontFace(card: Flashcard) -> some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(Color(hex: "13132a"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color(hex: "2a2a3a"), lineWidth: 0.5)
+            )
+            .overlay(
+                VStack(spacing: 16) {
+                    TopicTagView(tag: card.topicTag)
+                    MathTextView(card.question,
+                        fontSize: textPreference.size.questionSize,
+                        color: .white,
+                        alignment: .center)
+                    Text("Tap to reveal answer")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "444444"))
+                }
+                .padding(28)
+            )
+    }
+
+    private func backFace(card: Flashcard) -> some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(Color(hex: "13132a"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color(hex: "6C5CE7").opacity(0.4), lineWidth: 0.5)
+            )
+            .overlay(
+                VStack(spacing: 16) {
+                    TopicTagView(tag: card.topicTag)
+                    VStack(spacing: 12) {
+                        MathTextView(card.question,
+                            fontSize: textPreference.size.optionSize,
+                            color: Color(hex: "666666"),
+                            alignment: .center)
+                        Divider()
+                            .background(Color(hex: "2a2a3a"))
+                        MathTextView(card.answer,
+                            fontSize: textPreference.size.answerSize,
+                            color: .white,
+                            alignment: .center)
+                    }
+                }
+                .padding(28)
+            )
+    }
     private var responseButtons: some View {
         HStack(spacing: 12) {
             Button(action: { markCard(known: false) }) {
