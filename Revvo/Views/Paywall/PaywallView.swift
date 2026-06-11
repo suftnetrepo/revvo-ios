@@ -207,58 +207,67 @@ struct PaywallView: View {
         .buttonStyle(.plain)
     }
 
-    private var purchaseButton: some View {
-        VStack(spacing: 12) {
-            Button(action: { Task { await purchase() } }) {
-                HStack(spacing: 8) {
-                    if isPurchasing {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(0.8)
-                    }
-                    Text(isPurchasing ? "Processing..." : "Start Premium")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.white)
+   private var purchaseButton: some View {
+    VStack(spacing: 12) {
+        Button(action: { Task { await purchase() } }) {
+            HStack(spacing: 8) {
+                if isPurchasing {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.8)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color(hex: "6C5CE7"))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                Text(isPurchasing ? "Processing..." : "Start Premium")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(.white)
             }
-            .disabled(isPurchasing || selectedProduct == nil)
-
-            Text(selectedPlan == 2 ? "One-time purchase, no subscription" :
-                 "Cancel anytime in App Store settings")
-                .font(.system(size: 12))
-                .foregroundStyle(Color(hex: "555555"))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color(hex: "6C5CE7"))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-    }
+        .disabled(isPurchasing || selectedProduct == nil)
 
-    private var footerLinks: some View {
-        HStack(spacing: 24) {
-            Button("Restore purchases") {
-                Task { await restore() }
-            }
-            .font(.system(size: 13))
+        Text(selectedPlan == 2 ? "One-time purchase, no subscription" :
+             "Cancel anytime in App Store settings")
+            .font(.system(size: 12))
             .foregroundStyle(Color(hex: "555555"))
 
+        // Terms notice
+        HStack(spacing: 4) {
+            Text("By subscribing you agree to our")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(hex: "444444"))
+            Button("Terms of Use") {
+                if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(Color(hex: "6C5CE7"))
+            Text("and")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(hex: "444444"))
             Button("Privacy Policy") {
                 if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/") {
                     UIApplication.shared.open(url)
                 }
             }
-            .font(.system(size: 13))
-            .foregroundStyle(Color(hex: "555555"))
-
-            Button("Terms of Use") {
-                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/") {
-                    UIApplication.shared.open(url)
-                }
-            }
-            .font(.system(size: 13))
-            .foregroundStyle(Color(hex: "555555"))
+            .font(.system(size: 11))
+            .foregroundStyle(Color(hex: "6C5CE7"))
         }
+        .multilineTextAlignment(.center)
     }
+}
+   private var footerLinks: some View {
+    HStack(spacing: 12) {
+        Button("Restore purchases") {
+            Task { await restore() }
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(Color(hex: "555555"))
+
+    }
+}
 
     private func purchase() async {
         guard let product = selectedProduct else { return }

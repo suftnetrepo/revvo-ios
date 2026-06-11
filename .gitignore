@@ -1,0 +1,20 @@
+# Xcode
+.DS_Store
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.ipa
+*.xcarchive
+
+# Configuration files with secrets
+Revvo/Config.xcconfig
+Revvo/Info.plist
+
+# Pods
+Pods/
+Podfile.lock
+
+# IDE
+.vscode/
+*.swp
+*.swo

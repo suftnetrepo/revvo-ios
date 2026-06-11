@@ -44,17 +44,17 @@ struct HomeView: View {
                         .zIndex(2)
                 }
                 
-                if !showScan {
+                if !showScan && !showPaywall {
                     VStack {
                         Spacer()
                         HStack {
                             Spacer()
                             Button(action: {
-                                if decks.isEmpty || PurchaseService.shared.canScan {
-                                        showScan = true
-                                    } else {
-                                        showPaywall = true
-                                    }
+                                if PurchaseService.shared.canScan {
+                                    showScan = true
+                                } else {
+                                    showPaywall = true
+                                }
                             }) {
                                 Image(systemName: "camera.fill")
                                     .font(.system(size: 20))
@@ -68,6 +68,7 @@ struct HomeView: View {
                         }
                     }
                     .zIndex(2)
+                
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: showScan)

@@ -23,8 +23,7 @@ class OpenAIService {
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
     func generateFlashcards(from images: [UIImage]) async throws -> [FlashcardResponse] {
-        print("🚀 Starting generation with \(images.count) images")
-        print("🔑 API Key present: \(!apiKey.isEmpty)")
+     
         
         var imageContent: [[String: Any]] = []
         
@@ -67,12 +66,11 @@ class OpenAIService {
         ])
         
         let body: [String: Any] = [
-            "model": "gpt-4o",
+            "model": "gpt-5.4",
             "max_tokens": 2000,
             "messages": [["role": "user", "content": imageContent]]
         ]
         
-        print("📡 Sending request to OpenAI...")
         
         var request = URLRequest(url: URL(string: endpoint)!)
         request.httpMethod = "POST"
@@ -87,10 +85,6 @@ class OpenAIService {
             throw URLError(.badServerResponse)
         }
         
-        print("📬 Response status: \(httpResponse.statusCode)")
-        
-        let rawResponse = String(data: data, encoding: .utf8) ?? "unreadable"
-        print("📄 Raw response: \(rawResponse.prefix(500))")
         
         guard httpResponse.statusCode == 200 else {
             print("❌ Bad status code: \(httpResponse.statusCode)")
@@ -102,7 +96,6 @@ class OpenAIService {
         let message = choices?.first?["message"] as? [String: Any]
         let content = message?["content"] as? String ?? ""
         
-        print("🤖 AI content: \(content.prefix(300))")
         
         let cleaned = content
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -115,7 +108,6 @@ class OpenAIService {
         }
         
         let cards = try JSONDecoder().decode([FlashcardResponse].self, from: jsonData)
-        print("✅ Successfully decoded \(cards.count) cards")
         return cards
     }
     

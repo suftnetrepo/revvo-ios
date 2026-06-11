@@ -145,52 +145,116 @@ struct ScanView: View {
     private var emptyStateView: some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: "doc.viewfinder")
-                .font(.system(size: 64))
-                .foregroundStyle(Color(hex: "6C5CE7"))
-            VStack(spacing: 8) {
-                Text("Scan your notes")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(.white)
-                Text("Point your camera at handwritten or\nprinted notes to generate flashcards")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color(hex: "666666"))
-                    .multilineTextAlignment(.center)
+
+            // Icon and description
+            VStack(spacing: 20) {
+                Image(systemName: "doc.viewfinder")
+                    .font(.system(size: 64))
+                    .foregroundStyle(Color(hex: "6C5CE7"))
+
+                VStack(spacing: 8) {
+                    Text("Scan your notes")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(.white)
+                    Text("Point your camera at handwritten or\nprinted notes to generate flashcards")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color(hex: "666666"))
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: 12) {
+                    featurePill(icon: "doc.on.doc", text: "Up to 8 pages per scan")
+                    featurePill(icon: "hand.draw", text: "Handwriting supported")
+                    featurePill(icon: "sparkles", text: "AI generates up to 20 cards")
+                }
             }
-            VStack(spacing: 12) {
-                featurePill(icon: "doc.on.doc", text: "Up to 8 pages per scan")
-                featurePill(icon: "hand.draw", text: "Handwriting supported")
-                featurePill(icon: "sparkles", text: "AI generates up to 20 cards")
-            }
+
             Spacer()
-            if !purchaseService.isPremium {
-                HStack(spacing: 6) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 11))
-                    Text("\(purchaseService.scansRemaining) free scans remaining")
-                        .font(.system(size: 13))
+
+            // Bottom action area
+            if !purchaseService.isPremium && purchaseService.scansRemaining == 0 {
+                // Upgrade prompt
+                VStack(spacing: 16) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Color(hex: "6C5CE7"))
+                        Text("Free scans used up")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(.white)
+                        Text("You've used all 10 free scans this month.\nUpgrade to keep scanning unlimited notes.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(hex: "666666"))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(3)
+                    }
+
+                    Button(action: { onPaywall() }) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Unlock unlimited scans")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text("From £2.99/month")
+                                    .font(.system(size: 12))
+                                    .opacity(0.8)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "6C5CE7"), Color(hex: "4834d4")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color(hex: "6C5CE7").opacity(0.4), radius: 12, x: 0, y: 6)
+                    }
+
+                    Text("Resets on the 1st of next month")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "444444"))
                 }
-                .foregroundStyle(Color(hex: purchaseService.scansRemaining <= 2 ? "F59E0B" : "666666"))
-                .padding(.bottom, 4)
-            }
-            Button(action: { if purchaseService.canScan {
-                showScanner = true
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
+
             } else {
-                onPaywall()
-            }}) {
-                HStack(spacing: 8) {
-                    Image(systemName: "camera.fill")
-                    Text("Start scanning")
+                // Normal scan button with remaining count
+                VStack(spacing: 10) {
+                    if !purchaseService.isPremium {
+                        HStack(spacing: 6) {
+                            Image(systemName: purchaseService.scansRemaining <= 2 ?
+                                  "exclamationmark.circle.fill" : "camera.fill")
+                                .font(.system(size: 11))
+                            Text("\(purchaseService.scansRemaining) free scan\(purchaseService.scansRemaining == 1 ? "" : "s") remaining this month")
+                                .font(.system(size: 13))
+                        }
+                        .foregroundStyle(Color(hex: purchaseService.scansRemaining <= 2 ? "F59E0B" : "666666"))
+                    }
+
+                    Button(action: { showScanner = true }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "camera.fill")
+                            Text("Start scanning")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(hex: "6C5CE7"))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
                 }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color(hex: "6C5CE7"))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 32)
         }
     }
 
