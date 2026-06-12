@@ -18,7 +18,7 @@ class PurchaseService {
         return "scans_\(year)_\(month)"
     }
 
-    var canScan: Bool { isPremium || scansThisMonth < 10 }
+    var canScan: Bool { false }
     var scansRemaining: Int { isPremium ? 999 : max(0, 1 - scansThisMonth) }
 
     init() {

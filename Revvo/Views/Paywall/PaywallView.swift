@@ -207,7 +207,7 @@ struct PaywallView: View {
         .buttonStyle(.plain)
     }
 
-   private var purchaseButton: some View {
+  private var purchaseButton: some View {
     VStack(spacing: 12) {
         Button(action: { Task { await purchase() } }) {
             HStack(spacing: 8) {
@@ -238,7 +238,7 @@ struct PaywallView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(Color(hex: "444444"))
             Button("Terms of Use") {
-                if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
+                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/terms.html") {
                     UIApplication.shared.open(url)
                 }
             }
@@ -258,14 +258,32 @@ struct PaywallView: View {
         .multilineTextAlignment(.center)
     }
 }
-   private var footerLinks: some View {
-    HStack(spacing: 12) {
+
+private var footerLinks: some View {
+    VStack(spacing: 12) {
         Button("Restore purchases") {
             Task { await restore() }
         }
         .font(.system(size: 13))
         .foregroundStyle(Color(hex: "555555"))
 
+        HStack(spacing: 16) {
+            Button("Privacy Policy") {
+                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(Color(hex: "555555"))
+
+            Button("Terms of Use") {
+                if let url = URL(string: "https://suftnetrepo.github.io/revvo-ios/terms.html") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(Color(hex: "555555"))
+        }
     }
 }
 
